@@ -21,6 +21,53 @@ Para executar este servidor em sua máquina local, você precisará ter o Python
 
 Para executar o servidor, basta seguir as instruções na seção "Começando" deste README. Uma vez que o servidor está sendo executado, você pode acessá-lo em seu navegador web digitando `http://localhost:5000` na barra de endereços. O servidor irá processar qualquer requisição HTTP que você enviar e retornará uma resposta apropriada.
 
+## Testando
+Para executar requisições simultâneas utilize a ferramenta Apache Bench. Download: https://www.apachelounge.com/download/#google_vignette
+
+Ex: ab.exe -n 100 -c 20 http://127.0.0.1:5000/
+
+Result:
+```
+Benchmarking 127.0.0.1 (be patient).....done
+
+
+Server Software:
+Server Hostname:        127.0.0.1
+Server Port:            5000
+
+Document Path:          /
+Document Length:        15 bytes
+
+Concurrency Level:      20
+Time taken for tests:   0.257 seconds
+Complete requests:      100
+Failed requests:        0
+Total transferred:      3100 bytes
+HTML transferred:       1500 bytes
+Requests per second:    388.88 [#/sec] (mean)
+Time per request:       51.430 [ms] (mean)
+Time per request:       2.571 [ms] (mean, across all concurrent requests)
+Transfer rate:          11.77 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    1   3.4      0      16
+Processing:    16   45  12.9     47      63
+Waiting:        0   44  13.3     47      63
+Total:         17   46  13.0     47      63
+
+Percentage of the requests served within a certain time (ms)
+  50%     47
+  66%     48
+  75%     57
+  80%     58
+  90%     58
+  95%     63
+  98%     63
+  99%     63
+ 100%     63 (longest request)
+
+```
 ## Contribuindo
 
 Se você deseja contribuir com este projeto, basta seguir os seguintes passos:
