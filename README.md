@@ -23,8 +23,11 @@ Para executar o servidor, basta seguir as instruções na seção "Começando" d
 
 ## Testando
 Para executar requisições simultâneas utilize a ferramenta Apache Bench. Download: https://www.apachelounge.com/download/#google_vignette
+
 Ex: ab.exe -n 100 -c 20 http://127.0.0.1:5000/
+
 Result:
+```
 Benchmarking 127.0.0.1 (be patient).....done
 
 
@@ -64,7 +67,7 @@ Percentage of the requests served within a certain time (ms)
   99%     63
  100%     63 (longest request)
 
-
+```
 ## Contribuindo
 
 Se você deseja contribuir com este projeto, basta seguir os seguintes passos:
