@@ -1,0 +1,13 @@
+Finite state machines (FSMs) are a mathematical model used to represent and control the behavior of a system. In a single-threaded server, FSMs can be used to create concurrency by allowing the server to transition between different states in response to different inputs, without the need for multiple threads or processes.
+
+Here's how it works: when the server receives a request, it transitions to a new state based on the input and the rules defined by the FSM. In this new state, the server performs the appropriate actions and then transitions back to its original state, ready to process the next request. This allows the server to handle multiple requests concurrently, without the need for multiple threads or processes.
+
+For example, a web server might use an FSM to handle requests for different types of files, such as HTML pages, images, and videos. When a request is received, the server transitions to the appropriate state based on the type of file being requested, performs the necessary actions (e.g. reading the file from disk, sending it to the client), and then transitions back to its original state, ready to handle the next request.
+
+In short, FSMs can be used to create concurrency in a single-threaded server by allowing the server to transition between different states in response to different inputs, without the need for multiple threads or processes.
+
+In this FSM, the initial state is Idle, which means the server is waiting for a request. When a request is received, the server transitions to the appropriate state based on the type of file being requested. If the request is for an HTML page, the server transitions to the Serve HTML state, where it performs the necessary actions to serve the HTML page to the client (e.g. reading the file from disk, sending it to the client). Once the HTML page has been served, the server transitions back to the Idle state, ready to handle the next request.
+
+Similarly, if the request is for an image, the server transitions to the Serve Image state, where it performs the necessary actions to serve the image to the client (e.g. reading the file from disk, sending it to the client). Once the image has been served, the server transitions back to the Idle state, ready to handle the next request.
+
+In this way, the FSM allows the server to handle multiple requests concurrently, without the need for multiple threads or processes. It simply transitions between different states in response to different inputs, and performs the appropriate actions in each state. This allows the server to handle requests efficiently and concurrently, even though it is running on a single thread.

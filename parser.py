@@ -1,4 +1,3 @@
-#Funções para parsear as requisições HTTP
 from typing import Tuple
 
 # Função para parsear os cabeçalhos da requisição
@@ -24,5 +23,3 @@ def generate_response_body(path: str) -> str:
     else:
         response_body = "Página não encontrada"
     return response_body
-
-

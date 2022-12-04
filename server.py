@@ -1,21 +1,23 @@
 import socket
-import logging
+from typing import Any
 from states import ServerState
 from parser import parse_request_headers, generate_response_body, generate_response_headers
+from fsm import fsm
+from routines import gather
+from logger import log
 import sys, signal
-
-logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s - %(message)s")
+import asyncio
 
 # Função para lidar com Ctrl - C
-def signal_handler(signal, frame):
-    logging.info(f"Aplicação finalizada manualmente")
+def signal_handler(signal: int, frame: Any) -> None:
+    log.info("Aplicação finalizada manualmente")
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
 # Configurações do servidor
-HOST = "127.0.0.1"
-PORT = 5000
-BUFFER_SIZE = 1024
+HOST: str = "127.0.0.1"
+PORT: int = 5000
+BUFFER_SIZE: int = 1024
 
 # Criação do socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,58 +26,20 @@ server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server_socket.bind((HOST, PORT))
 server_socket.listen()
 
-logging.info(f"Servidor iniciado na porta {PORT}")
-# Início do loop principal
-while True:
-    # Estado inicial do servidor
-    state = ServerState.WAITING_FOR_CONNECTION
-    # Aceitando uma nova conexão
-    connection_socket, address = server_socket.accept()
-    logging.info(f"Nova conexão de {address}")
-    # Loop de processamento da conexão
+log.info(f"Servidor iniciado na porta {PORT}")
+
+async def main() -> None:
+    # Início do loop principal
     while True:
-        # Estado de espera por conexão
-        if state == ServerState.WAITING_FOR_CONNECTION:
-            # Recebimento dos dados da requisição
-            data = connection_socket.recv(BUFFER_SIZE)
-            # Verificação de dados recebidos
-            if data:
-                logging.info(f"Recebimento de dados de {address}")
-                # Alteração do estado para recebimento de cabeçalhos
-                state = ServerState.RECEIVING_REQUEST_HEADERS
-            else:
-                # Fechamento da conexão
-                logging.info(f"Conexão de {address} fechada")
-                connection_socket.close()
-                break
+       # Aceitando uma nova conexão
+        connection_socket, address = server_socket.accept()
+        log.info(f"Nova conexão de {address}")
+        await gather(fsm(connection_socket, address, BUFFER_SIZE))
 
-        # Estado de recebimento de cabeçalhos
-        elif state == ServerState.RECEIVING_REQUEST_HEADERS:
-            # Análise dos dados recebidos
-            request_method, path, http_version = parse_request_headers(data.decode())
-            logging.info(f"Requisição {request_method} {path} {http_version} de {address}")
-            # Alteração do estado para envio de cabeçalhos
-            state = ServerState.SENDING_RESPONSE_HEADERS
+asyncio.run(main())
+"""
+The code above uses a finite state machine (FSM) to process requests concurrently in a single thread web server. The FSM is represented by the fsm() coroutine, which is executed concurrently for each request using the gather() function.
 
-        # Estado de envio de cabeçalhos
-        elif state == ServerState.SENDING_RESPONSE_HEADERS:
-            # Envio dos cabeçalhos da resposta
-            response_headers = generate_response_headers(200)
-            connection_socket.send(response_headers.encode())
-            # Alteração do estado para envio do corpo da resposta
-            state = ServerState.SENDING_RESPONSE_BODY
+The fsm() coroutine processes each request by transitioning between different states, such as WAITING_FOR_CONNECTION, RECEIVING_REQUEST_HEADERS, SENDING_RESPONSE_HEADERS, and SENDING_RESPONSE_BODY. These states correspond to the different steps involved in processing a request, such as receiving the request headers, generating the response headers and body, and closing the connection.
 
-        # Estado de envio do corpo da resposta
-        elif state == ServerState.SENDING_RESPONSE_BODY:
-            # Envio do corpo da resposta
-            response_body = generate_response_body(path)
-            connection_socket.send(response_body.encode())
-            # Alteração do estado para fechamento da conexão
-            state = ServerState.CLOSING_CONNECTION
-
-        # Estado de fechamento da conexão
-        elif state == ServerState.CLOSING_CONNECTION:
-            # Fechamento da conexão
-            logging.info(f"Conexão de {address} fechada")
-            connection_socket.close()
-            break
+Because the fsm() coroutine is executed concurrently for each request using the gather() function, the web server is able to handle multiple requests concurrently within the same thread. This allows the server to process requests efficiently and avoid blocking the main thread."""
