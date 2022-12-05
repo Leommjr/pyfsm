@@ -6,15 +6,21 @@ O servidor é iniciado chamando a função "main", que escuta por conexões de e
 
 A coroutine "fsm" é responsável por lidar com cada conexão individual. Ele processa requisições de entrada, passando por uma série de estados:
 
-WAITING FOR CONNECTION: O servidor aguarda por dados de entrada do cliente.
-RECEIVING REQUEST_HEADERS: O servidor recebe e analisa os cabeçalhos da requisição.
-SENDING RESPONSE_HEADERS: O servidor gera e envia os cabeçalhos de resposta para o cliente.
-SENDING RESPONSE_BODY: O servidor gera e envia o corpo da resposta para o cliente.
-CLOSING CONNECTION: O servidor fecha a conexão com o cliente.
+WAITING_FOR_CONNECTION: O servidor aguarda por dados de entrada do cliente.
+RECEIVING_REQUEST_HEADERS: O servidor recebe e analisa os cabeçalhos da requisição.
+SENDING_RESPONSE_HEADERS: O servidor gera e envia os cabeçalhos de resposta para o cliente.
+SENDING_RESPONSE_BODY: O servidor gera e envia o corpo da resposta para o cliente.
+CLOSING_CONNECTION: O servidor fecha a conexão com o cliente.
 
-A função fsm é uma coroutine que implementa a FSM, que tem vários estados diferentes que representam as diferentes etapas de processamento de uma solicitação. O estado inicial é ServerState.WAITING_FOR_CONNECTION, onde o servidor aguarda por dados de entrada no socket de conexão. Quando os dados são recebidos, a FSM transita para o estado ServerState.RECEIVING_REQUEST_HEADERS, onde analisa os cabeçalhos da solicitação usando a função parse_request_headers.
 
-Depois de analisar os cabeçalhos da solicitação, a FSM transita para o estado ServerState.SENDING_RESPONSE_HEADERS, onde gera os cabeçalhos de resposta usando a função generate_response_headers. A FSM, então, transita para o estado ServerState.SENDING_RESPONSE_HEADERS, onde ele gera os cabeçalhos da resposta usando a função generate_response_headers. A FSM, então, transita para o estado ServerState.SENDING_RESPONSE_BODY, onde ele gera o corpo da resposta usando a função generate_response_body. Finalmente, a FSM transita para o estado ServerState.CLOSING_CONNECTION, onde ela fecha a conexão e termina a coroutine.
+A função fsm é uma coroutine que implementa a FSM, que tem vários estados diferentes que representam as diferentes etapas de processamento de uma solicitação.
+O estado inicial é ServerState.WAITING_FOR_CONNECTION, onde o servidor aguarda por dados de entrada no socket de conexão.
+Quando os dados são recebidos, a FSM transita para o estado ServerState.RECEIVING_REQUEST_HEADERS, onde analisa os cabeçalhos da solicitação usando a função parse_request_headers.
+
+Depois de analisar os cabeçalhos da solicitação, a FSM transita para o estado ServerState.SENDING_RESPONSE_HEADERS,
+onde gera os cabeçalhos de resposta usando a função generate_response_headers. 
+A FSM, então, transita para o estado ServerState.SENDING_RESPONSE_HEADERS, onde ele gera os cabeçalhos da resposta usando a função generate_response_headers. A FSM, então, transita para o estado ServerState.SENDING_RESPONSE_BODY, onde ele gera o corpo da resposta usando a função generate_response_body. 
+Finalmente, a FSM transita para o estado ServerState.CLOSING_CONNECTION, onde ela fecha a conexão e termina a coroutine.
 
 Para alcançar a concorrência, a função principal usa a função gather para executar múltiplas coroutines fsm concorrentemente. A função gather cria uma fila de coroutines fsm e as executa em um loop até que todas estejam concluídas. Isso permite que o servidor processe múltiplas solicitações concorrentemente em uma única thread.
 
