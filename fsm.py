@@ -84,7 +84,7 @@ class FSM:
         request_str = str(request, 'utf-8')
         # Analisa os dados da requisição para extrair o método HTTP e a URL
         method, url, version = request_str.split('\n')[0].split(' ')
-        log.info(f"Requisição: {method} | Path: {path}")
+        log.info(f"Requisição: {method} | Url: {url}")
         # Se o método for GET, processa a requisição
         if method == "GET":
             # Divide a URL pelo caractere / para extrair o caminho
