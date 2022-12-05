@@ -1,9 +1,12 @@
 # pyfsm - Finite State Machine Web Server 
 
 O código é um servidor web simples que usa uma máquina de estados finitos (FSM) para lidar com requisições de entrada de forma concorrente. O servidor usa uma única thread para processar múltiplas solicitações simultaneamente, utilizando coroutines.
+
 O FSM é inicializado com os estados IDLE, READING, WRITING e CLOSING, que são usados para controlar o fluxo de dados na conexão.
 A função run é responsável por iniciar o loop do FSM, enquanto a função process_request é chamada a cada iteração do loop para processar a requisição de acordo com o estado atual. As funções read_request, write_response e close_connection são chamadas a partir da função process_request para realizar as ações de leitura, escrita e fechamento da conexão, respectivamente.
+
 O uso do FSM permite que o servidor gerencie várias conexões de forma concorrente, processando cada uma em seu próprio estado e transição de acordo com o fluxo de dados na conexão. Isso é possível graças ao uso do módulo asyncio, que permite a criação de tarefas assíncronas em Python.
+
 O método run é usado para iniciar o loop do FSM, criando uma nova tarefa assíncrona com o método create_task e chamando o método _run internamente. O método _run é o coração do FSM, contendo o loop principal que será executado enquanto não houver dados a serem lidos no socket e a conexão não estiver sendo fechada.
 
 Dentro do loop principal, o método process_request é chamado a cada iteração para processar a requisição de acordo com o estado atual do FSM. O estado atual é verificado e, de acordo com as transições válidas definidas no dicionário transições, é definido o próximo estado do FSM. Em seguida, o método process_request é chamado novamente para continuar o processamento da requisição.
@@ -44,7 +47,7 @@ Para executar este servidor em sua máquina local, você precisará ter o Python
 
 ## Executando
 
-Para executar o servidor, basta seguir as instruções na seção "Começando" deste README. Uma vez que o servidor está sendo executado, você pode acessá-lo em seu navegador web digitando `http://localhost:5000` na barra de endereços. O servidor irá processar qualquer requisição HTTP que você enviar e retornará uma resposta apropriada.
+Para executar o servidor, basta seguir as instruções na seção "Começando" deste README. Uma vez que o servidor está sendo executado, você pode acessá-lo em seu navegador web digitando `http://localhost:8080/` na barra de endereços. O servidor irá processar qualquer requisição HTTP que você enviar e retornará uma resposta apropriada.
 
 ## Testando
 Para executar requisições simultâneas utilize a ferramenta Apache Bench. Download: https://www.apachelounge.com/download/#google_vignette
