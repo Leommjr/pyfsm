@@ -6,11 +6,11 @@ O servidor é iniciado chamando a função "main", que escuta por conexões de e
 
 A coroutine "fsm" é responsável por lidar com cada conexão individual. Ele processa requisições de entrada, passando por uma série de estados:
 
-WAITING_FOR_CONNECTION: O servidor aguarda por dados de entrada do cliente.
-RECEIVING_REQUEST_HEADERS: O servidor recebe e analisa os cabeçalhos da requisição.
-SENDING_RESPONSE_HEADERS: O servidor gera e envia os cabeçalhos de resposta para o cliente.
-SENDING_RESPONSE_BODY: O servidor gera e envia o corpo da resposta para o cliente.
-CLOSING_CONNECTION: O servidor fecha a conexão com o cliente.
+WAITING FOR CONNECTION: O servidor aguarda por dados de entrada do cliente.
+RECEIVING REQUEST_HEADERS: O servidor recebe e analisa os cabeçalhos da requisição.
+SENDING RESPONSE_HEADERS: O servidor gera e envia os cabeçalhos de resposta para o cliente.
+SENDING RESPONSE_BODY: O servidor gera e envia o corpo da resposta para o cliente.
+CLOSING CONNECTION: O servidor fecha a conexão com o cliente.
 
 A função fsm é uma coroutine que implementa a FSM, que tem vários estados diferentes que representam as diferentes etapas de processamento de uma solicitação. O estado inicial é ServerState.WAITING_FOR_CONNECTION, onde o servidor aguarda por dados de entrada no socket de conexão. Quando os dados são recebidos, a FSM transita para o estado ServerState.RECEIVING_REQUEST_HEADERS, onde analisa os cabeçalhos da solicitação usando a função parse_request_headers.
 
