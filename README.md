@@ -1,29 +1,31 @@
 # pyfsm - Finite State Machine Web Server 
 
-O código é um servidor web simples que usa uma máquina de estados finitos (FSM) para lidar com requisições de entrada de forma concorrente. O servidor usa uma única thread para processar múltiplas solicitações simultaneamente, utilizando coroutines e a biblioteca asyncio.
+O código é um servidor web simples que usa uma máquina de estados finitos (FSM) para lidar com requisições de entrada de forma concorrente. O servidor usa uma única thread para processar múltiplas solicitações simultaneamente, utilizando coroutines.
+O FSM é inicializado com os estados IDLE, READING, WRITING e CLOSING, que são usados para controlar o fluxo de dados na conexão.
+A função run é responsável por iniciar o loop do FSM, enquanto a função process_request é chamada a cada iteração do loop para processar a requisição de acordo com o estado atual. As funções read_request, write_response e close_connection são chamadas a partir da função process_request para realizar as ações de leitura, escrita e fechamento da conexão, respectivamente.
+O uso do FSM permite que o servidor gerencie várias conexões de forma concorrente, processando cada uma em seu próprio estado e transição de acordo com o fluxo de dados na conexão. Isso é possível graças ao uso do módulo asyncio, que permite a criação de tarefas assíncronas em Python.
+O método run é usado para iniciar o loop do FSM, criando uma nova tarefa assíncrona com o método create_task e chamando o método _run internamente. O método _run é o coração do FSM, contendo o loop principal que será executado enquanto não houver dados a serem lidos no socket e a conexão não estiver sendo fechada.
 
-O servidor é iniciado chamando a função "main", que escuta por conexões de entrada e cria uma coroutine para cada nova conexão usando a função "gather". A função "gather" mantém uma fila de coroutines e itera "acordando" cada coroutine na fila até que todas as coroutines tenham sido concluídas.
+Dentro do loop principal, o método process_request é chamado a cada iteração para processar a requisição de acordo com o estado atual do FSM. O estado atual é verificado e, de acordo com as transições válidas definidas no dicionário transições, é definido o próximo estado do FSM. Em seguida, o método process_request é chamado novamente para continuar o processamento da requisição.
 
-A coroutine "fsm" é responsável por lidar com cada conexão individual. Ele processa requisições de entrada, passando por uma série de estados:
+O método process_request é responsável por chamar as funções de leitura, escrita e fechamento de conexão de acordo com o estado atual do FSM. Por exemplo, se o estado atual for READING, o método read_request é chamado para ler os dados da requisição do socket. Se o estado for WRITING, o método write_response é chamado para escrever a resposta na conexão. E se o estado for CLOSING, o método close_connection é chamado para fechar a conexão.
 
+O fluxo de execução do código acima é o seguinte:
 
-1. WAITING_FOR_CONNECTION: O servidor aguarda por dados de entrada do cliente.
-2. RECEIVING_REQUEST_HEADERS: O servidor recebe e analisa os cabeçalhos da requisição.
-3. SENDING_RESPONSE_HEADERS: O servidor gera e envia os cabeçalhos de resposta para o cliente.
-4. SENDING_RESPONSE_BODY: O servidor gera e envia o corpo da resposta para o cliente.
-5. CLOSING_CONNECTION: O servidor fecha a conexão com o cliente.
-
-
-A função fsm é uma coroutine que implementa a FSM, que tem vários estados diferentes que representam as diferentes etapas de processamento de uma solicitação.
-O estado inicial é ServerState.WAITING_FOR_CONNECTION, onde o servidor aguarda por dados de entrada no socket de conexão.
-Quando os dados são recebidos, a FSM transita para o estado ServerState.RECEIVING_REQUEST_HEADERS, onde analisa os cabeçalhos da solicitação usando a função parse_request_headers.
-
-Depois de analisar os cabeçalhos da solicitação, a FSM transita para o estado ServerState.SENDING_RESPONSE_HEADERS,
-onde gera os cabeçalhos de resposta usando a função generate_response_headers. 
-A FSM, então, transita para o estado ServerState.SENDING_RESPONSE_HEADERS, onde ele gera os cabeçalhos da resposta usando a função generate_response_headers. A FSM, então, transita para o estado ServerState.SENDING_RESPONSE_BODY, onde ele gera o corpo da resposta usando a função generate_response_body. 
-Finalmente, a FSM transita para o estado ServerState.CLOSING_CONNECTION, onde ela fecha a conexão e termina a coroutine.
-
-Para alcançar a concorrência, a função principal usa a função gather para executar múltiplas coroutines fsm concorrentemente. A função gather cria uma fila de coroutines fsm e as executa em um loop até que todas estejam concluídas. Isso permite que o servidor processe múltiplas solicitações concorrentemente em uma única thread.
+1. O módulo asyncio é importado, junto com o módulo socket.
+2. Os estados e as transições do FSM são definidos.
+3. A classe FSM é definida, que é responsável por gerenciar uma conexão.
+4. A função new_connection é definida, que é chamada pela função start_server do módulo asyncio a cada nova conexão.
+5. A função main é definida, que inicializa o servidor e o loop de eventos.
+6. O servidor é inicializado e começa a escutar por novas conexões.
+7. Quando uma nova conexão é estabelecida, a função new_connection é chamada, que cria uma nova instância de FSM para gerenciar a conexão.
+8. A instância de FSM é iniciada e começa a rodar
+9. O loop interno do FSM fica rodando indefinidamente, processando a requisição de acordo com o seu estado atual.
+10. Quando o estado atual é IDLE, o próximo estado é definido como READING.
+11. Quando o estado atual é READING, o método read_request é chamado para ler os dados da requisição do socket.
+12. Quando o estado atual é WRITING, o método write_response é chamado para enviar uma resposta para o cliente.
+13. Quando o estado atual é CLOSING, o método close_connection é chamado para fechar a conexão com o cliente.
+14. O loop interno do FSM volta para o início e repete os passos 9-13 até que a conexão seja fechada ou ocorra um erro.
 
 ## Começando
 
@@ -34,7 +36,7 @@ Para começar a usar este servidor em sua máquina local, siga as instruções a
 3. Instale as dependências do projeto executando o comando `pip install -r requirements.txt`.
 4. Execute o servidor com o comando `python server.py`.
 
-O servidor será iniciado na porta 5000 do seu localhost. Você pode alterar a porta padrão no arquivo `server.py`, alterando o valor da constante `PORT`.
+O servidor será iniciado na porta 8080 do seu localhost. Você pode alterar a porta padrão no arquivo `server.py`, alterando o valor da constante `PORT`.
 
 ### Pré-requisitos
 
@@ -47,7 +49,7 @@ Para executar o servidor, basta seguir as instruções na seção "Começando" d
 ## Testando
 Para executar requisições simultâneas utilize a ferramenta Apache Bench. Download: https://www.apachelounge.com/download/#google_vignette
 
-Ex: ab.exe -n 100 -c 20 http://127.0.0.1:5000/
+Ex: ab.exe -n 100 -c 20 http://127.0.0.1:8080/
 
 Result:
 ```
@@ -56,7 +58,7 @@ Benchmarking 127.0.0.1 (be patient).....done
 
 Server Software:
 Server Hostname:        127.0.0.1
-Server Port:            5000
+Server Port:            8080
 
 Document Path:          /
 Document Length:        15 bytes

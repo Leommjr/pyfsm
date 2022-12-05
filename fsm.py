@@ -1,57 +1,125 @@
-import socket
-from typing import Tuple
-from states import ServerState
-from parser import parse_request_headers, generate_response_body, generate_response_headers
+import asyncio
 from logger import log
 
-async def fsm(connection_socket: socket.socket, address: Tuple[str, int],
-              BUFFER_SIZE: int):
-    # Estado inicial do servidor
-    state = ServerState.WAITING_FOR_CONNECTION
+# Definindo os estados do FSM (máquina de estado finito)
+IDLE = 'IDLE'
+READING = 'READING'
+WRITING = 'WRITING'
+CLOSING = 'CLOSING'
 
-    # Loop de processamento da conexão
-    while True:
-        # Estado de espera por conexão
-        if state == ServerState.WAITING_FOR_CONNECTION:
-            # Recebimento dos dados da requisição
-            data = connection_socket.recv(BUFFER_SIZE)
-            # Verificação de dados recebidos
-            if data:
-                log.info(f"Recebimento de dados de {address}")
-                # Alteração do estado para recebimento de cabeçalhos
-                state = ServerState.RECEIVING_REQUEST_HEADERS
-            else:
-                # Fechamento da conexão
-                log.info(f"Conexão de {address} fechada")
-                connection_socket.close()
-                break
+# Definindo as transicoes do FSM
+transicoes = {
+    IDLE: (READING,),
+    READING: (WRITING,),
+    WRITING: (CLOSING,),
+    CLOSING: (IDLE,),
+}
 
-        # Estado de recebimento de cabeçalhos
-        elif state == ServerState.RECEIVING_REQUEST_HEADERS:
-            # Análise dos dados recebidos
-            request_method, path, http_version = parse_request_headers(data.decode())
-            log.info(f"Requisição {request_method} {path} {http_version} de {address}")
-            # Alteração do estado para envio de cabeçalhos
-            state = ServerState.SENDING_RESPONSE_HEADERS
+# Definindo o FSM
+class FSM:
+    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        """Inicializa o FSM
 
-        # Estado de envio de cabeçalhos
-        elif state == ServerState.SENDING_RESPONSE_HEADERS:
-            # Envio dos cabeçalhos da resposta
-            response_headers = generate_response_headers(200)
-            connection_socket.send(response_headers.encode())
-            # Alteração do estado para envio do corpo da resposta
-            state = ServerState.SENDING_RESPONSE_BODY
+        Args:
+            reader: O leitor de stream do asyncio
+            writer: O escritor de stream do asyncio
+        """
+        # Inicializando o estado do FSM
+        self.state = IDLE
+        self.reader = reader
+        self.writer = writer
 
-        # Estado de envio do corpo da resposta
-        elif state == ServerState.SENDING_RESPONSE_BODY:
-            # Envio do corpo da resposta
-            response_body = generate_response_body(path)
-            connection_socket.send(response_body.encode())
-            # Alteração do estado para fechamento da conexão
-            state = ServerState.CLOSING_CONNECTION
+    async def run(self) -> None:
+        """Inicia o loop do FSM"""
+        await asyncio.create_task(self._run())
 
-        # Estado de fechamento da conexão
-        elif state == ServerState.CLOSING_CONNECTION:
-            # Fechamento da conexão
-            connection_socket.close()
-            break
+    async def _run(self) -> None:
+        """Loop do FSM"""
+        while not self.reader.at_eof() and not self.writer.is_closing():
+            # Mantém o loop do FSM rodando indefinidamente
+            while True:
+                # Processa a requisição de acordo com o estado atual
+                if self.state == IDLE:
+                    next_state = READING
+                elif self.state == READING:
+                    next_state = WRITING
+                elif self.state == WRITING:
+                    next_state = CLOSING
+                elif self.state == CLOSING:
+                    next_state = IDLE
+
+                if self.writer.is_closing():
+                    # Retorna sem mudar o estado do FSM
+                    return
+                # Verifica se o próximo estado é válido
+                if next_state in transicoes[self.state]:
+                    # Define o próximo estado como o estado atual
+                    self.state = next_state
+
+                await self.process_request()
+
+    async def process_request(self) -> None:
+        """Processa a requisição de acordo com o estado atual do FSM"""
+        if self.writer.is_closing():
+            # Retorna do método sem processar a requisição
+            return
+        # Processa a requisição de acordo com o estado atual
+        if self.state == READING:
+            log.info("LENDO")
+            await self.read_request()
+        elif self.state == WRITING:
+            log.info("ESCREVENDO")
+            await self.write_response()
+        elif self.state == CLOSING:
+            log.info("FECHANDO")
+            await self.close_connection()
+
+    async def read_request(self) -> None:
+        """Lê a requisição do socket"""
+        request = await self.reader.readuntil(b'\r\n')
+        # Converte os dados da requisição em uma string
+        if request == b'':
+            return
+
+        request_str = str(request, 'utf-8')
+        # Analisa os dados da requisição para extrair o método HTTP e a URL
+        method, url, version = request_str.split('\n')[0].split(' ')
+        log.info(f"Requisição: {method} | Path: {path}")
+        # Se o método for GET, processa a requisição
+        if method == "GET":
+            # Divide a URL pelo caractere / para extrair o caminho
+            path = url.split('/')[1]
+
+            # Armazena o caminho na instância do FSM para uso posterior
+            self.path = path
+
+    async def write_response(self) -> None:
+        """Escreve a resposta na conexão"""
+        # Se o caminho for /, cria uma resposta com uma mensagem "Hello World"
+        # Cria os dados da resposta
+        response_data = "HTTP/1.1 200 OK\r\n\r\nContent-Type: text/html\r\n\n<html><body><h1>Bem-vindo ao meu site!</h1><p>Esta é uma resposta HTML de exemplo que pode ser enviada usando sockets.</p></body></html>\r\n"
+        # Converte os dados da resposta em um objeto bytes
+        if self.path == "abc":
+            await asyncio.sleep(3)
+        response_bytes = bytes(response_data, "utf-8")
+        # Escreve os dados da resposta no socket
+        if self.writer.is_closing():
+            # Retorna do método sem enviar a resposta
+            return
+        try:
+            self.writer.write(response_bytes)
+            await self.writer.drain()
+        except Exception as e:
+           log.info(str(e))
+
+    async def close_connection(self) -> None:
+        """Fecha a conexão"""
+        if self.writer.is_closing():
+            # Retorna do método sem fechar a conexão novamente
+            return
+        # Fecha a conexão
+        self.writer.close()
+        await self.writer.wait_closed()
+
+
+
