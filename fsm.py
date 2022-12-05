@@ -1,18 +1,13 @@
 import asyncio
 from logger import log
-
-# Definindo os estados do FSM (máquina de estado finito)
-IDLE = 'IDLE'
-READING = 'READING'
-WRITING = 'WRITING'
-CLOSING = 'CLOSING'
+from states import States
 
 # Definindo as transicoes do FSM
 transicoes = {
-    IDLE: (READING,),
-    READING: (WRITING,),
-    WRITING: (CLOSING,),
-    CLOSING: (IDLE,),
+    States.IDLE: (States.READING,),
+    States.READING: (States.WRITING,),
+    States.WRITING: (States.CLOSING,),
+    States.CLOSING: (States.IDLE,),
 }
 
 # Definindo o FSM
@@ -25,7 +20,7 @@ class FSM:
             writer: O escritor de stream do asyncio
         """
         # Inicializando o estado do FSM
-        self.state = IDLE
+        self.state = States.IDLE
         self.reader = reader
         self.writer = writer
 
@@ -39,14 +34,14 @@ class FSM:
             # Mantém o loop do FSM rodando indefinidamente
             while True:
                 # Processa a requisição de acordo com o estado atual
-                if self.state == IDLE:
-                    next_state = READING
-                elif self.state == READING:
-                    next_state = WRITING
-                elif self.state == WRITING:
-                    next_state = CLOSING
-                elif self.state == CLOSING:
-                    next_state = IDLE
+                if self.state == States.IDLE:
+                    next_state = States.READING
+                elif self.state == States.READING:
+                    next_state = States.WRITING
+                elif self.state == States.WRITING:
+                    next_state = States.CLOSING
+                elif self.state == States.CLOSING:
+                    next_state = States.IDLE
 
                 if self.writer.is_closing():
                     # Retorna sem mudar o estado do FSM
@@ -64,13 +59,13 @@ class FSM:
             # Retorna do método sem processar a requisição
             return
         # Processa a requisição de acordo com o estado atual
-        if self.state == READING:
+        if self.state == States.READING:
             log.info("LENDO")
             await self.read_request()
-        elif self.state == WRITING:
+        elif self.state == States.WRITING:
             log.info("ESCREVENDO")
             await self.write_response()
-        elif self.state == CLOSING:
+        elif self.state == States.CLOSING:
             log.info("FECHANDO")
             await self.close_connection()
 
