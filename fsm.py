@@ -26,7 +26,7 @@ class FSM:
 
     async def run(self) -> None:
         """Inicia o loop do FSM"""
-        await asyncio.create_task(self._run())
+        await self._run()
 
     async def _run(self) -> None:
         """Loop do FSM"""
@@ -92,7 +92,7 @@ class FSM:
         """Escreve a resposta na conexão"""
         # Se o caminho for /, cria uma resposta com uma mensagem "Hello World"
         # Cria os dados da resposta
-        response_data = "HTTP/1.1 200 OK\r\n\r\nContent-Type: text/html\r\n\n<html><body><h1>Bem-vindo ao meu site!</h1><p>Esta é uma resposta HTML de exemplo que pode ser enviada usando sockets.</p></body></html>\r\n"
+        response_data = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\n<html><body><h1>Bem-vindo ao meu site!</h1><p>Esta eh uma resposta HTML de exemplo.</p></body></html>\r\n"
         # Converte os dados da resposta em um objeto bytes
         if self.path == "abc":
             await asyncio.sleep(3)
