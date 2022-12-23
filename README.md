@@ -43,7 +43,7 @@ O servidor será iniciado na porta 8080 do seu localhost. Você pode alterar a p
 
 ### Pré-requisitos
 
-Para executar este servidor em sua máquina local, você precisará ter o Python 3.6 ou superior instalado. Além disso, é necessário instalar as dependências do projeto, listadas no arquivo `requirements.txt`.
+Para executar este servidor em sua máquina local, você precisará ter o Python 3.7 ou superior instalado. Além disso, é necessário instalar as dependências do projeto, listadas no arquivo `requirements.txt`.
 
 ## Executando
 
