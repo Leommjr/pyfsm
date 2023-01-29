@@ -1,4 +1,5 @@
 import asyncio
+import select
 from logger import log
 from states import States
 
@@ -9,6 +10,15 @@ transicoes = {
     States.WRITING: (States.CLOSING,),
     States.CLOSING: (States.IDLE,),
 }
+ALLOWED_PATHS = ["index.html", "about.html"]
+
+async def read_file_async(file):
+    ready, _, _ = select.select([file], [], [], 0)
+    if ready:
+        data = file.read()
+        return data
+    else:
+        return None
 
 # Definindo o FSM
 class FSM:
@@ -86,16 +96,18 @@ class FSM:
             path = url.split('/')[1]
 
             # Armazena o caminho na instância do FSM para uso posterior
-            self.path = path
+            if path in ALLOWED_PATHS:
+                self.path = path
+            else:
+                self.path = "index.html"
 
     async def write_response(self) -> None:
         """Escreve a resposta na conexão"""
         # Se o caminho for /, cria uma resposta com uma mensagem "Hello World"
         # Cria os dados da resposta
-        response_data = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\n<html><body><h1>Bem-vindo ao meu site!</h1><p>Esta eh uma resposta HTML de exemplo.</p></body></html>\r\n"
+        data_file = await self._read_file()
+        response_data = f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\n{data_file}\r\n"
         # Converte os dados da resposta em um objeto bytes
-        if self.path == "abc":
-            await asyncio.sleep(3)
         response_bytes = bytes(response_data, "utf-8")
         # Escreve os dados da resposta no socket
         if self.writer.is_closing():
@@ -116,5 +128,11 @@ class FSM:
         self.writer.close()
         await self.writer.wait_closed()
 
+    async def _read_file(self, mode='r'):
+        """
+        Ler arquivo de forma não bloqueante
+        """
+        with open(self.path, mode) as file:
+            result = await asyncio.ensure_future(read_file_async(file))
 
-
+        return result
