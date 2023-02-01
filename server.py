@@ -1,33 +1,37 @@
-# Importando os módulos asyncio e socket
-import asyncio
-import socket
+from async_socket import AsyncSocket
+from socket import *
 from fsm import FSM
+from select import select
 from logger import log
 
-async def new_connection(reader, writer) -> None:
-    """Cria uma nova conexão"""
-    log.info("Nova requisição recebida")
-    fsm = FSM(reader, writer)
-    await fsm.run()
 
+def main(address):
+    sock = AsyncSocket(socket(AF_INET, SOCK_STREAM))
+    sock.bind(address)
+    sock.listen(5)
+    while True:
+        client, addr = yield from sock.accept()  
+        log.info("Connection %s", addr)
 
-async def main() -> None:
-    try:
-        PORT = 8080
-        # Cria um socket e o associa a um endereço local
-        sock = socket.socket()
-        sock.bind(('127.0.0.1', PORT))
+        fsm_server.tasks.append(new_connection(client))
 
-        # Inicia o loop de eventos e escuta por requisições entrantes
-        server = await asyncio.start_server(new_connection, sock=sock)
-        log.info("Server iniciado na porta %s. Acesse em http://127.0.0.1:%s", PORT, PORT)
-        async with server:
-            await server.serve_forever()
-    except KeyboardInterrupt:
-        server.close()
-        await server.wait_closed()
-        sock.close()
+def new_connection(client):
+    while True:
+        req = yield from client.recv(100)  
+        if not req:
+            break
+        
+        path = fsm_server.process_request(req)
+        resp = yield from fsm_server.read_file_async(path)
+        response_data = f"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\n{resp}\r\n"
+        response_bytes = bytes(response_data, "utf-8")
+        yield from client.send(response_bytes)    
+        yield from client.close()
 
-if __name__ == "__main__":
-    asyncio.run(main())
+global fsm_server
+fsm_server = FSM()
+port = 8080
+fsm_server.tasks.append(main(('', port)))
+log.info("START SERVER ON PORT %s", port)
+fsm_server.run()
 
