@@ -7,6 +7,7 @@ from logger import log
 
 def main(address):
     sock = AsyncSocket(socket(AF_INET, SOCK_STREAM))
+    sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     sock.bind(address)
     sock.listen(5)
     while True:

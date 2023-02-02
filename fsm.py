@@ -61,4 +61,3 @@ class FSM:
                     raise RuntimeError("SOMETHING BAD")
             except StopIteration:
                 log.info("CLIENT DONE")
-
